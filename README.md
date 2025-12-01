@@ -79,7 +79,7 @@ python scripts/localization_stats.py
 
 # 6. (Optional) Generate detection overlay video
 python scripts/generate_detection_video.py
-
+```
 Results Summary
 
 Preprocessing: Significant speckle noise reduction and contrast enhancement allowed stable region detection where raw sonar frames were too noisy for reliable detection.
