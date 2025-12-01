@@ -1,124 +1,167 @@
-Boat Sonar Detection & Localization
-Using Centroid Extraction, Preprocessing & Trajectory Tracking
+# Boat Detection and Localization in Sonar Imagery  
+**Author:** Gayathri P K  
+**Repository Name:** boat-sonar-detection  
 
-Project Overview
-This project focuses on extracting, detecting, and localizing a boat present in a high–noise underwater sonar video.
-Sonar imagery presents fundamental challenges:
-Intense speckle noise
--Low contrast
--Irregular lighting
--Nonlinear wave propagation
--Weak object shapes
-The goal was to build a stable and consistent preprocessing + localization pipeline that identifies the boat region, extracts its centroid movement over time, and estimates its trajectory.
+---
+
+##  Project Overview
+
+This project builds a complete pipeline for detecting and localizing a boat in noisy underwater sonar imagery.  
+It processes a raw sonar video, extracts frames, enhances sonar data to improve signal-to-noise ratio, detects the acoustic signature of the boat, tracks its centroid over time, and computes movement stability metrics.  
+
+Because sonar returns are often amorphous and lack clear edges (unlike optical images), a classical image-processing + blob-segmentation + centroid-tracking approach was adopted for a robust baseline solution.  
+
+The deep-learning detection phase (e.g., YOLO) was *planned* but not executed, due to dataset size and resource constraints. However, the code and dataset structure have been fully prepared so that training can be carried out with minimal additional effort.
+
+---
+
+##  Repository Structure
 
 
-Objectives
-✔ Extract frames from the raw sonar video
-✔ Enhance sonar frames for better visibility
-✔ Detect the boat region using intensity-based blob extraction
-✔ Localize the boat using centroid detection
-✔ Track movement over time
-✔ Generate a trajectory plot
-✔ Compute stability metrics
+**scripts/** contains:
+- `extract_frames.py` — extract frames from video  
+- `preprocess_frames.py` — speckle reduction & contrast enhancement  
+- `detect_blob.py` — intensity-based segmentation & blob detection  
+- `track_centroid.py`, `smooth_track.py` — centroid extraction, smoothing & tracking  
+- `localization_stats.py` — compute variance and spatial stability metrics  
+- `generate_detection_video.py` — overlay detections + produce inference video  
 
-The original assignment also included object detection using deep learning (YOLO / Faster-RCNN etc), but due to system limitations, extremely large datasets, and bounding-box annotation constraints, that portion was not completed.
-However, the pipeline built here forms the full backbone required for model training.
+**results/** includes:  
+- `sonar_detection_output.mp4` — full sonar video with detection overlay  
+- `centroid_track.csv`, `centroid_track_smoothed.csv` — raw and smoothed centroid tracks  
+- `trajectory_plot.png` — 2D trajectory plot (boat path in sonar image coordinates)  
 
-Dataset
-Due to size limitations, sonar frames and supporting images are hosted externally.
-🔗 Dataset Download Link: https://drive.google.com/drive/folders/1tpEuzPra7E72K_u1_SW_WgAVPK-NR2KW?usp=drive_link
-The dataset includes:
-Extracted sonar frames
-Preprocessed (denoised + contrast-enhanced) frames
-Topview boat images
-Centroid tracking CSV
-Trajectory plot image
-Original raw sonar video
+**samples/** contains a handful of example images to illustrate preprocessing, detection, and blob localization results.  
 
-Methodology
-1. Frame Extraction
-Frames were sampled from the sonar video with controlled frame skipping (approx. every 5–7 frames) to reduce redundancy.
-Output saved to:
-data/sonar_frames/raw/
+---
 
-2. Preprocessing Pipeline
-🔹 Median Filtering
-Removes speckle noise while preserving edges.
-🔹 Contrast Enhancement
-Important because sonar reflections are extremely low-contrast.
-We used:
-CLAHE
-Gamma tuning + histogram stretching
-Enhanced frames saved to:
-data/sonar_frames/preprocessed/
+## 📥 Dataset Access
 
-3. Boat Blob Detection (No Manual Labels)
-Instead of manually drawing bounding boxes for hundreds of frames:
-We used adaptive thresholding
-Extracted only the largest reflective blob
-Treated it as the boat
-Extracted its centroid (cx, cy)
-Intermediate debug frames saved to:
-data/sonar_frames/blob_debug/
+Raw data (sonar frames, raw video, and top-view boat images) are too large to store directly in this repository.  
+They are hosted externally on Google Drive:
 
-4. Centroid Tracking
-All frame centroids were saved to:
-centroid_track.csv
-Then smoothing filters were applied:
-moving average
-outlier suppression
-Final CSV:
-centroid_track_smoothed.csv
+**Dataset Download Link:**  
+[https://drive.google.com/drive/folders/1tpEuzPra7E72K_u1_SW_WgAVPK-NR2KW?usp=sharing](https://drive.google.com/drive/folders/1tpEuzPra7E72K_u1_SW_WgAVPK-NR2KW?usp=sharing)
 
-5. Trajectory Plot
-A full trajectory visualization was generated:
-report/trajectory_plot.png
-This demonstrates stable local motion of the detected object (presumably the boat) within expected sonar boundaries.
+**To run locally:**
 
-6. Localization Metrics
-To quantify stability, we computed:
-✔ Variance in X and Y
-✔ Standard deviation
-✔ Approximate detection bounding range
-Example Result:
-Centroid X std-dev: 417 px
-Centroid Y std-dev: 100 px
+1. Download the entire dataset from the link.  
+2. Place it in your local clone under the folder structure:
+data/
+sonar_raw_video.mp4
+sonar_frames/
+raw/
+topview_raw/
+images/
+
+3. Run the preprocessing + detection scripts according to the instructions below.
+
+---
+
+## 🧪 How to Run the Pipeline
+
+```bash
+# 1. Extract frames from raw sonar video
+python scripts/extract_frames.py
+
+# 2. Preprocess frames (speckle suppression + contrast enhancement)
+python scripts/preprocess_frames.py
+
+# 3. Detect boat region via blob segmentation
+python scripts/detect_blob.py
+
+# 4. Track centroid across frames
+python scripts/track_centroid.py
+python scripts/smooth_track.py
+
+# 5. Compute localization metrics
+python scripts/localization_stats.py
+
+# 6. (Optional) Generate detection overlay video
+python scripts/generate_detection_video.py
 
 Results Summary
-✔ Successfully Completed
-Sonar data extraction
-Image preprocessing
-Automated blob-based localization
-Centroid extraction
-Motion tracking and smoothing
-Quantitative localization metrics
-Visualization of full sonar trajectory
-Output detection overlay video
-Visual Example:
-Trajectory indicates consistent motion trend and identifiable object path — proving that the boat’s sonar signature is extractable even under noise.
 
-Limitations
-1. No Bounding Box Annotation
-Due to the large number of frames and constraints with installation of LabelImg, manual bounding box labeling was not completed.
-Bounding boxes are required for YOLO, Faster-RCNN etc.
-2. No Model Training (YOLO / RCNN)
-The deep learning model training part was not completed.
-Reasons:
-Heavy GPU requirements
-YOLOv8 and PyTorch dependencies on Windows were unstable
-Lack of annotated dataset
-Annotation tool GUI failures after installation
-Processing speed and storage limitations
-3. Dataset Scale
-Sonar frames (~3000 images) are large in total size, requiring external hosting.
-4. High Noise Domain
-Even after preprocessing, intensity patterns sometimes remain vague, and blob extraction must be treated as an approximation.
+Preprocessing: Significant speckle noise reduction and contrast enhancement allowed stable region detection where raw sonar frames were too noisy for reliable detection.
+
+Blob-based detection successfully identified the boat’s acoustic return as the largest intensity cluster in each usable frame.
+
+Centroid tracking + smoothing produced a coherent boat trajectory over time.
+
+Localization stability metrics:
+
+Centroid X-axis standard deviation: ~ 417 px
+
+Centroid Y-axis standard deviation: ~ 100 px
+These indicate that the detection remains spatially bounded despite sonar noise and vehicle motion.
+
+Inference video (in results/) shows consistent detection overlays — validating the method qualitatively.
+
+This baseline demonstrates that classical signal-processing + segmentation + tracking is viable for sonar boat localization.
+
+Limitations & Why Deep-Learning Was Not Completed
+
+No bounding-box annotations: Manual bounding-box annotation for hundreds of sonar frames was prohibitive given time and hardware constraints.
+
+Ambiguous appearance in sonar: The boat appears as a diffuse acoustic blob, lacking clear structural edges. This undermines bounding-box detection reliability.
+
+Hardware & dataset size issues: Full-frame sonar data and optical top-view images consume substantial storage and compute resources; training a deep model (YOLO or similar) would exceed available local GPU capacity.
+
+Domain gap risk: Mixing optical top-view images with sonar data for training may cause false positives, because visual features differ drastically between domains.
+
+Although not executed, the DL phase is fully planned and prepared:
+
+Model
+
+YOLOv8 (Nano or Small)
+
+Single-class detector: boat
+
+Dataset plan
+
+Two experiments:
+
+Train on sonar frames only
+
+Train on combined sonar + top-view images
+
+Evaluate:
+
+mAP
+
+Precision, Recall, F1
+
+False positives
+
+Inference latency
+
+Label strategy
+
+Use blob bounding boxes as pseudo-labels for sonar
+
+Manual annotation for top-view images
+
+Expected Observations
+
+Sonar-only training performs better on sonar inference
+
+Adding optical images may hurt until domain gap is reduced
 
 Conclusion
-Even without full deep learning integration, this project achieved the hardest parts:
--Signal cleaning
--Feature isolation
--Region localization
--Motion stability verification
-The centroid-based approach proves that sonar data contains learnable detection patterns and confirms feasibility of ML-based object detection.
-The entire dataset, cleaned frames, region overlays, centroid CSV, and trajectory visualization offer a complete foundation for future model training.
+
+This project successfully:
+
+extracted reliable localization from noisy sonar footage
+
+demonstrated consistent target reflectance
+
+quantified spatial stability
+
+produced visual detection results
+
+While the deep-learning phase was not executed due to hardware & annotation constraints, the preparation for it has been completed logically and structurally.
+
+The classical pipeline outcomes confirm:
+
+Sonar data does contain stable, learnable signatures for boat detection
+and provide a solid foundation for future model-based work.
